@@ -1,0 +1,13 @@
+#planet-info {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7); /* semi-transparent black background */
+  color: white; /* white text */
+  padding: 15px; /* padding inside the info box */
+  border-radius: 8px; /* rounded corners */
+  font-family: Arial, sans-serif; /* font style */
+  font-size: 14px; /* text size */
+  max-width: 200px; /* optional: control width */
+  display: none; /* initially hidden */
+}
