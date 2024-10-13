@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System</title>
+    <style>
+      #planet-info {
+          position: absolute;
+          top: 20px;
+          left: 20px;
+          background: rgba(255, 255, 255, 0.9);
+          padding: 10px;
+          border-radius: 8px;
+          display: none; /* Hidden by default, displayed when a planet is clicked */
+          z-index: 10;
+      }
+
+      button {
+          margin-top: 10px;
+          padding: 5px 10px;
+          background-color: #007bff;
+          color: white;
+          border: none;
+          cursor: pointer;
+      }
+
+      button:hover {
+          background-color: #0056b3;
+      }
+      
+    </style>
+    
+    
+</head>
+<body>
+    <div id="planet-info"></div>
+    <script type="module" src="/main.js"></script>
+</body>
+</html>
