@@ -1,0 +1,19 @@
+{
+  "name": "solar_sys",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^3.2.11"
+  },
+  "dependencies": {
+    "dat.gui": "^0.7.9",
+    "node.js": "^0.0.1-security",
+    "three": "^0.148.0"
+  }
+}
