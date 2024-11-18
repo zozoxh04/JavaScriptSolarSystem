@@ -5,19 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" type="text/css" href="styles.css"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script> <!-- Include dat.GUI library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
     <title>Solar System</title>
     <style>
        body, html {
         margin: 0;
         padding: 0;
         height: 100%;
-        font-family: 'Courier New', monospace; /* Change to Courier New */
-    }
-    #starter-screen {
-        background-image: url('./src/img/stars.jpg');
-        background-size: cover;
-        background-position: center;
+        font-family: 'Courier New', monospace;
+        }
+        #starter-screen {
+        position: relative;
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -25,7 +23,28 @@
         align-items: center;
         color: white;
         text-align: center;
+        overflow: hidden;
     }
+
+    #bg-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            object-fit: cover;
+        }
+        .content-overlay {
+            position: relative;
+            z-index: 1;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+        }
     h1 {
         font-size: 3em;
         margin-bottom: 20px;
@@ -53,15 +72,15 @@
         top: 20px;
         left: 20px;
         background-image: url('./src/img/future 6.jpg');
-        width: 370px; /* Set the width you want */
-        height: 250px; /* Set the height you want */
+        width: 370px;
+        height: 250px;
         padding: 10px;
         border-radius: 8px;
-        display: none; /* Hidden by default, displayed when a planet is clicked */
+        display: none;
         z-index: 10;
         color: white; 
-        padding-top: 30px; /* Moves text downwards */
-        padding-left: 40px; /* Moves text to the right */
+        padding-top: 30px;
+        padding-left: 40px;
         font-size: 12px;
     }
     #pauseButton {
@@ -87,16 +106,73 @@
         right: 10px;
         z-index: 1000;
     }
+    #planet-buttons {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        padding: 15px;
+        border-radius: 10px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 800px;
+        z-index: 1000;
+    }
+    .planet-button {
+        min-width: 80px;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 20px;
+        color: white;
+        font-family: 'Franklin Gothic Medium';
+        font-weight: bold;
+        cursor: pointer;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        transition: transform 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .planet-button:hover {
+        transform: scale(1.1);
+    }
+    @media (max-width: 768px) {
+        .planet-button {
+            padding: 6px 12px;
+            font-size: 0.9em;
+            min-width: 60px;
+        }
+    }
     </style>
 </head>
 <body>
     <div id="starter-screen">
-        <h1>Welcome to the Solar System Simulation</h1>
-        <p>Explore the wonders of our cosmic neighborhood. Click and drag to navigate, zoom in and out to get a closer look at planets and their moons.</p>
-        <button id="start-button">Start Exploration</button>
+        <video id="bg-video" autoplay muted loop playsinline>
+            <source src="starvid.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="content-overlay">
+            <h1>Solar System Simulation</h1>
+            <button id="start-button">Start Exploration</button>
+        </div>
     </div>
-    <div id="planet-info"></div>
-    <div id="gui-container"></div> <!-- Container for GUI -->
+    <div id="planet-info" style="display: none;"></div>
+    <div id="gui-container" style="display: none;"></div>
+    <div id="planet-buttons" style="display: none;"></div> <!-- Container for Planet Buttons -->
     <script type="module" src="/main.js"></script>
+    <script>
+        // JavaScript to handle the Start Exploration button click
+        document.getElementById('start-button').addEventListener('click', function() {
+            // Hide the starter screen
+            document.getElementById('starter-screen').style.display = 'none';
+
+            // Show the hidden elements
+            document.getElementById('planet-info').style.display = 'block';
+            document.getElementById('gui-container').style.display = 'block';
+            document.getElementById('planet-buttons').style.display = 'flex';
+        });
+    </script>
 </body>
+
 </html>

@@ -5,9 +5,16 @@ import { atmosphereVertexShader, atmosphereFragmentShader } from './atmosphereSh
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
+import { VignetteShader } from 'three/examples/jsm/shaders/VignetteShader';
 
-import starsTexture from './src/img/stars.jpg';
+
+
 import starsTexture2 from './src/img/stars2.jpg';
+import constellation from './src/img/constellation.jpg'
+import starsTexture from './src/img/stars.jpg';
+
 import sunTexture from './src/img/sun.jpg';
 import mercuryTexture from './src/img/mercury.jpg';
 import venusTexture from './src/img/venus.jpg';
@@ -36,8 +43,7 @@ let dragStartX = 0;
 let dragStartY = 0;
 let dragThreshold = 5; // Minimum movement to consider it a drag
 let INTERSECTED;
- let isExploringPlanet = false;
-
+let isExploringPlanet = false;
 
 
 // Initialize renderer
@@ -49,21 +55,22 @@ document.body.appendChild(renderer.domElement);
 
 // Create scene and camera
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
 const canvas = document.querySelector('canvas');
+
 
 // Define maximum and minimum zoom limits
 const zoomSpeed = 0.5; 
-const minZoom = 1; 
-const maxZoom = 10;  
+
 
 
 // Set background
 const cubeTextureLoader = new THREE.CubeTextureLoader();
 scene.background = cubeTextureLoader.load([
-  starsTexture, starsTexture, starsTexture, 
-  starsTexture, starsTexture, starsTexture
+  constellation, constellation, constellation, 
+  constellation, constellation, constellation
 ]);
+
 
 // Set up orbit controls with zoom limits
 const orbit = new OrbitControls(camera, renderer.domElement);
@@ -71,8 +78,8 @@ camera.position.set(-90, 140, 140);
 orbit.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
 orbit.dampingFactor = 0.25;
 orbit.enableZoom = true; // Allow zooming
-orbit.minDistance = 20; // Minimum zoom distance
-orbit.maxDistance = 450; // Maximum zoom distance
+orbit.minDistance = 30; // Minimum zoom distance
+orbit.maxDistance = 7000; // Maximum zoom distance
 orbit.update();
 
 // Add lights
@@ -86,7 +93,7 @@ scene.add(pointLight);
 // Set up GUI
 const gui = new dat.GUI();
 const settings = { 
-  rotationSpeed: 1,
+  rotationSpeed: 0.1,
   showOrbits: true,
   showMoons: true,
   showAsteroidBelt: true,
@@ -103,6 +110,102 @@ gui.add(settings, 'showMoons').name('Show Moons').onChange(toggleMoons);
 gui.add(settings, 'showAsteroidBelt').name('Show Asteroid Belt').onChange(toggleAsteroid);
 gui.add(settings, 'planetScale', 0.5, 2).name('Planet Scale').onChange(updatePlanetScale);
 gui.add(settings, 'pauseResume').name('Pause');
+
+
+// Create a large grid helper
+const gridSize = 30000; // Size of the grid (extends both positive and negative directions)
+const divisions = 1500; // Number of divisions in the grid
+const mainGridColor = 0x8e8e8e; // Color for main grid lines
+const subGridColor = 0x222222; // Color for sub grid lines
+const subGridColor2 = 0x222222; // Color for sub grid lines
+
+const grid = new THREE.GridHelper(gridSize, divisions, mainGridColor, subGridColor);
+grid.material.transparent = true;
+grid.material.opacity = 0.3;
+grid.position.y = -50; // Position slightly below the sun
+
+// Make the grid unclickable
+grid.raycast = () => {}; // Override raycast method
+scene.add(grid);
+
+// Add a second grid for better visual reference (optional)
+const secondaryGrid = new THREE.GridHelper(gridSize / 2, divisions / 2, mainGridColor, subGridColor);
+secondaryGrid.material.transparent = true;
+secondaryGrid.material.opacity = 0.15;
+secondaryGrid.position.y = -50;
+
+// Make the secondary grid unclickable
+secondaryGrid.raycast = () => {}; // Override raycast method
+scene.add(secondaryGrid);
+
+// Add scale markers (distance indicators)
+const scaleMarkers = new THREE.Group();
+
+// Create distance markers every 100 units
+for (let i = 0; i <= gridSize / 2; i += 100) {
+    // Skip the center point
+    if (i === 0) continue;
+
+    // Create text sprite for distance marker
+    const distance = i.toString();
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = 48; // Reduced from 64
+    canvas.height = 24; // Reduced from 32
+
+    context.fillStyle = 'rgba(255, 255, 255, 0.5)'; // More transparent text
+    context.font = '16px Arial'; // Smaller font size
+    context.fillText(distance, 4, 16); // Adjusted y-position for smaller canvas
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMaterial = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0.4, // More transparent sprites
+        depthTest: false, // Ensures proper rendering with transparency
+        depthWrite: false // Prevents z-fighting with other transparent objects
+    });
+
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.scale.set(15, 7.5, 1); // Smaller scale (was 20, 10, 1)
+
+    // Add markers on X axis
+    const markerX = sprite.clone();
+    markerX.position.set(i, -45, 0);
+    scaleMarkers.add(markerX);
+
+    const markerNegX = sprite.clone();
+    markerNegX.position.set(-i, -45, 0);
+    scaleMarkers.add(markerNegX);
+
+    // Add markers on Z axis
+    const markerZ = sprite.clone();
+    markerZ.position.set(0, -45, i);
+    scaleMarkers.add(markerZ);
+
+    const markerNegZ = sprite.clone();
+    markerNegZ.position.set(0, -45, -i);
+    scaleMarkers.add(markerNegZ);
+}
+
+// Make scale markers unclickable
+scaleMarkers.traverse(object => {
+    object.raycast = () => {}; // Empty raycast function makes object unclickable
+});
+
+scene.add(scaleMarkers);
+
+// Add grid toggle to GUI
+gui.add(grid, 'visible')
+    .name('Show Grid')
+    .onChange((value) => {
+        secondaryGrid.visible = value;
+        scaleMarkers.visible = value;
+    });
+
+// Update the orbit controls to match grid orientation
+orbit.maxPolarAngle = Math.PI / 1.6; // Limit vertical rotation to keep grid visible
+
 
 // Function to toggle orbit visibility
 function toggleOrbits(value) {
@@ -242,10 +345,8 @@ function displayPlanetInfo(planet, factType = 'educationalFact') {
   });
   document.getElementById('exitBtn').addEventListener('click', () => {
     infoDiv.style.display = 'none';
-    resetView();
   });
 }
-
 
 
 // Handle click events
@@ -377,36 +478,36 @@ function createPlanet(name, size, texture, position, ring, atmosphereProps, moon
 }
 
 // Create planets
-const mercury = createPlanet('Mercury', 3.2, mercuryTexture, 28, null, {color: 0xA5A5A5, density: 0.1});
-const venus = createPlanet('Venus', 5.8, venusTexture, 44, null, { color: 0xFFD700, density: 2.0 });
-const earth = createPlanet('Earth', 6, earthTexture, 62, null, { color: 0x4169E1, density: 1.0 }, [
+const mercury = createPlanet('Mercury', 3.2, mercuryTexture, 44, null, {color: 0xA5A5A5, density: 0.1});
+const venus = createPlanet('Venus', 5.8, venusTexture, 62, null, { color: 0xFFD700, density: 2.0 });
+const earth = createPlanet('Earth', 6, earthTexture, 78, null, { color: 0x4169E1, density: 1.0 }, [
   { name:'Moon', size: 1.5, texture: moonTexture, distance: 10 }
 ]);
-const mars = createPlanet('Mars', 4, marsTexture, 78, null, { color: 0xFF4500, density: 0.6 });
-const jupiter = createPlanet('Jupiter', 12, jupiterTexture, 100, null, { color: 0xfbceb1, density: 0.7 },[
+const mars = createPlanet('Mars', 4, marsTexture, 96, null, { color: 0xFF4500, density: 0.6 });
+const jupiter = createPlanet('Jupiter', 12, jupiterTexture, 176, null, { color: 0xfbceb1, density: 0.7 },[
 { name:'Io', size: 0.8, texture: ioTexture, distance: 15 },
 { name:'Europa', size: 0.7, texture: europaTexture, distance: 18 },
 { name:'Ganymede', size: 1, texture: ganymedeTexture, distance: 21 },
 { name:'Callisto', size: 0.9, texture: callistoTexture, distance: 24 },
 ]);
 
-const saturn = createPlanet('Saturn', 10, saturnTexture, 138, {
+const saturn = createPlanet('Saturn', 10, saturnTexture, 275, {
   innerRadius: 10,
   outerRadius: 20,
   texture: saturnRingTexture
 }, {color: 0xeedfcc, density: 0.5});
-const uranus = createPlanet('Uranus', 7, uranusTexture, 176, {
+const uranus = createPlanet('Uranus', 7, uranusTexture, 400, {
   innerRadius: 7,
   outerRadius: 12,
   texture: uranusRingTexture
 }, {color: 0x1b0e2ff, density: 0.2});
-const neptune = createPlanet('Neptune', 7, neptuneTexture, 200, null, {color: 0x104e8b, density: 0.2});
-const pluto = createPlanet('Pluto', 2.8, plutoTexture, 216, null, {color: 0xc08081, density: 0.2});
-const asteroidBelt = createAsteroidBelt(scene, 280, 220, 2000, asteroidTexture);
-const smallerAsteroidBelt = createAsteroidBelt(scene, 90, 80, 500, asteroidTexture);
+const neptune = createPlanet('Neptune', 7, neptuneTexture, 500, null, {color: 0x104e8b, density: 0.2});
+const pluto = createPlanet('Pluto', 2.8, plutoTexture, 600, null, {color: 0xc08081, density: 0.2});
+const asteroidBelt = createAsteroidBelt(scene, 280, 300, 400, asteroidTexture);
+const smallerAsteroidBelt = createAsteroidBelt(scene, 120, 160, 500, asteroidTexture);
 
 // Create the Sun
-const sunGeo = new THREE.SphereGeometry(16, 30, 30);
+const sunGeo = new THREE.SphereGeometry(20, 30, 30);
 const sunMat = new THREE.MeshBasicMaterial({
   map: textureLoader.load(sunTexture),
   emissive: new THREE.Color(0xffff00),
@@ -417,7 +518,7 @@ sun.name = 'Sun';
 scene.add(sun);
 
 // Add Glow Around the Sun
-const sunGlowGeo = new THREE.SphereGeometry(18, 30, 30);
+const sunGlowGeo = new THREE.SphereGeometry(25, 30, 30);
 const sunGlowMat = new THREE.ShaderMaterial({
   uniforms: {
     viewVector: { value: camera.position }
@@ -447,7 +548,7 @@ const sunGlow = new THREE.Mesh(sunGlowGeo, sunGlowMat);
 scene.add(sunGlow);
 
 // Add Outer Glow (Optional)
-const outerGlowGeo = new THREE.SphereGeometry(20, 30, 30);
+const outerGlowGeo = new THREE.SphereGeometry(27, 30, 30);
 const outerGlowMat = new THREE.MeshBasicMaterial({
   color: 0xffaa00,
   transparent: true,
@@ -460,7 +561,8 @@ scene.add(outerGlow);
 
 
 function createOrbitRing(radius, color) {
-  const ringGeo = new THREE.RingGeometry(radius - 0.1, radius + 0.1, 64);
+  // Increase the difference between outer and inner radii for a thicker ring
+  const ringGeo = new THREE.RingGeometry(radius - 0.3, radius + 0.5, 64);  // Increased thickness
   const ringMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
   const ring = new THREE.Mesh(ringGeo, ringMat);
   ring.rotation.x = -0.5 * Math.PI;
@@ -479,6 +581,9 @@ function createAsteroidBelt(scene, innerRadius, outerRadius, asteroidCount = 100
   const asteroidBelt = new THREE.Group();
   for (let i = 0; i < asteroidCount; i++) {
     const asteroid = new THREE.Mesh(asteroidGeometry, asteroidMaterial);
+
+    // Set raycasting to false for these asteroids (ignore clicks)
+    asteroid.raycast = function() {}; // Disable raycasting
 
     // Random position within the belt
     const radius = THREE.MathUtils.randFloat(innerRadius, outerRadius);
@@ -503,7 +608,6 @@ function createAsteroidBelt(scene, innerRadius, outerRadius, asteroidCount = 100
     asteroid.scale.set(scale, scale, scale);
 
     asteroidBelt.add(asteroid);
-  
   }
 
   scene.add(asteroidBelt);
@@ -512,16 +616,17 @@ function createAsteroidBelt(scene, innerRadius, outerRadius, asteroidCount = 100
 }
 
 
+
 // Create the orbit rings
-createOrbitRing(28, 0x888888);  // Mercury (gray)
-createOrbitRing(44, 0xffd700);  // Venus (golden)
-createOrbitRing(62, 0x00ff00);  // Earth (green)
-createOrbitRing(78, 0xff0000);  // Mars (red)
-createOrbitRing(100, 0xffa500); // Jupiter (orange)
-createOrbitRing(138, 0xffff00); // Saturn (yellow)
-createOrbitRing(176, 0xadd8e6); // Uranus (light blue)
-createOrbitRing(200, 0x0000ff); // Neptune (blue)
-createOrbitRing(216, 0xdda0dd); // Pluto (light purple)
+createOrbitRing(44, 0xFFFFF);  // Mercury 
+createOrbitRing(62, 0xFFFFFF);  // Venus
+createOrbitRing(78, 0xFFFFF);  // Earth 
+createOrbitRing(96, 0xFFFFFF);  // Mars 
+createOrbitRing(176, 0xFFFFF); // Jupiter
+createOrbitRing(275, 0xFFFFFF); // Saturn
+createOrbitRing(400, 0xFFFFF); // Uranus
+createOrbitRing(500, 0xFFFFFF); // Neptune
+createOrbitRing(600, 0xFFFFF); // Pluto 
 
 // Animation function
 function animate() {
@@ -563,6 +668,7 @@ function animate() {
 
     camera.position.lerp(desiredPosition, 0.05);
     camera.lookAt(cameraTarget);
+    
   }
 
   // Rotate moons
@@ -590,6 +696,7 @@ function animate() {
 renderer.setAnimationLoop(animate);
 
 
+// Function to dynamically add the Reset View button
 function addResetViewButton() {
   const button = document.createElement('button');
   button.textContent = 'Reset View';
@@ -605,15 +712,20 @@ function addResetViewButton() {
   });
   document.body.appendChild(button);
 }
-addResetViewButton();
 
+// Event listener for the Start Exploration button
+document.getElementById('start-button').addEventListener('click', function () {
+  // Hide the starter screen
+  document.getElementById('starter-screen').style.display = 'none';
 
-// Function to reset the camera view
-function resetView() {
-  orbit.enabled = true;
-  camera.position.set(-90, 140, 140);
-  camera.lookAt(scene.position);
-}
+  // Show the hidden elements
+  document.getElementById('planet-info').style.display = 'block';
+  document.getElementById('gui-container').style.display = 'block';
+  document.getElementById('planet-buttons').style.display = 'flex';
+
+  // Add the Reset View button dynamically
+  addResetViewButton();
+});
 
 // Handle window resizing
 window.addEventListener('resize', function() {
@@ -652,7 +764,6 @@ window.addEventListener('wheel', (event) => {
 }, { passive: false });  // Add this option
 
 
-
 // Function to handle mouse down (drag start)
 canvas.addEventListener('mousedown', (event) => {
   isDragging = false;  // Reset drag state
@@ -686,6 +797,7 @@ canvas.addEventListener('mouseup', (event) => {
   }
 });
 
+// Handle clicks on planets
 function handlePlanetClick(event) {
   // Prevent the default behavior
   event.preventDefault();
@@ -697,19 +809,32 @@ function handlePlanetClick(event) {
   // Update the picking ray with the camera and mouse position
   raycaster.setFromCamera(mouse, camera);
 
-  // Calculate objects intersecting the picking ray
-  const intersects = raycaster.intersectObjects(scene.children, true);
+  // Calculate objects intersecting the picking ray and filter out scale markers and grids
+  const intersects = raycaster.intersectObjects(scene.children, true).filter(intersection => {
+      // Check if the object or its parent is not part of scaleMarkers, grid, or secondaryGrid
+      let obj = intersection.object;
+      while (obj) {
+          if (obj === scaleMarkers || obj === grid || obj === secondaryGrid) return false;
+          obj = obj.parent;
+      }
+      return true;
+  });
 
   if (intersects.length > 0) {
       // Get the first intersected object
       const object = intersects[0].object;
+
+      // Ignore the asteroid belt objects here
+      if (object === asteroidBelt || object === smallerAsteroidBelt) {
+          return; // Don't do anything if it's the asteroid belt
+      }
 
       // Check if the clicked object is a planet
       if (planetData[object.name.toLowerCase()]) {
           focusedPlanet = object;
           orbit.enabled = false;
           displayPlanetInfo(planetData[object.name.toLowerCase()]);
-          
+
           // Animate camera to focus on the clicked planet
           gsap.to(camera.position, {
               duration: 2,
@@ -896,7 +1021,7 @@ function openExplorePanel(planet) {
   }
 
   // Create UI Panel
-  createExplorationPanel(planet, exploreControls);
+  createExplorationPanel(planet, exploreControls, planetScene, composer);
 }
 
 // Helper function to get planet-specific atmosphere colors
@@ -932,7 +1057,7 @@ function getPlanetAtmosphereDensity(planetName) {
 }
 
 // Helper function to create the exploration panel UI
-function createExplorationPanel(planet, exploreControls) {
+function createExplorationPanel(planet, exploreControls, planetScene, composer) {
   const panel = document.createElement('div');
   panel.style.position = 'absolute';
   panel.style.left = '20px';
@@ -950,8 +1075,13 @@ function createExplorationPanel(planet, exploreControls) {
       <li>Scroll to zoom in/out</li>
       <li>Right click + drag to pan</li>
     </ul>
+    <button id="viewSkybox">View Surface Skybox</button>
     <button id="returnToSolarSystem">Return to Solar System</button>
   `;
+
+  panel.querySelector('#viewSkybox').addEventListener('click', () => {
+    openSkyboxView(planet, exploreControls, planetScene, composer);
+  });
 
   panel.querySelector('#returnToSolarSystem').addEventListener('click', () => {
     isExploringPlanet = false;
@@ -962,20 +1092,243 @@ function createExplorationPanel(planet, exploreControls) {
 
   document.body.appendChild(panel);
 }
+function openSkyboxView(planet, prevControls, prevScene, prevComposer) {
+  // Dispose of previous controls and composer
+  if (prevControls) prevControls.dispose();
+  if (prevComposer) prevComposer.dispose();
+
+  // Hide the solar system scene to prevent overlap
+  prevScene.visible = false;
+
+  // Create a new scene for the skybox view
+  const skyboxScene = new THREE.Scene();
+
+  // Create a new camera for the skybox view
+  const skyboxCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+  skyboxCamera.position.set(0, 0, 0);
+
+  // Create new controls for first-person view
+  const skyboxControls = new PointerLockControls(skyboxCamera, renderer.domElement);
+
+  // Handle locking and unlocking
+  const blocker = document.createElement('div');
+  blocker.style.position = 'absolute';
+  blocker.style.width = '100%';
+  blocker.style.height = '100%';
+  blocker.style.backgroundColor = 'rgba(0,0,0,0.5)';
+  blocker.style.display = 'flex';
+  blocker.style.justifyContent = 'center';
+  blocker.style.alignItems = 'center';
+  blocker.style.zIndex = '999';
+  blocker.innerHTML = `<p style="color: white;">Click to explore the skybox</p>`;
+  document.body.appendChild(blocker);
+
+  blocker.addEventListener('click', () => {
+    skyboxControls.lock();
+  });
+
+  skyboxControls.addEventListener('lock', () => {
+    blocker.style.display = 'none';
+  });
+
+  skyboxControls.addEventListener('unlock', () => {
+    blocker.style.display = 'flex';
+  });
+
+  // Load the skybox textures
+  const textureLoader = new THREE.TextureLoader();
+  const basePath = `/assets/textures/skybox/${planet.name.toLowerCase()}/`;
+  const faceNames = ['rt', 'lt', 'up', 'dn', 'ft', 'bk'];
+  const materials = [];
+  let loadedCount = 0;
+
+  const createSkybox = () => {
+    if (loadedCount === 6) {
+      const skyboxGeo = new THREE.BoxGeometry(1000, 1000, 1000);
+      const skybox = new THREE.Mesh(skyboxGeo, materials);
+      skyboxScene.add(skybox);
+      console.log('Skybox created successfully');
+    }
+  };
+
+  faceNames.forEach((face, index) => {
+    const path = `${basePath}${face}.jpg`;
+    textureLoader.load(
+      path,
+      (texture) => {
+        const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
+        materials[index] = material;
+        loadedCount++;
+        createSkybox();
+      },
+      undefined,
+      (error) => {
+        console.error(`Error loading ${face}.jpg:`, error);
+        loadedCount++;
+        createSkybox();
+      }
+    );
+  });
+
+  // Create a composer for the skybox
+  const skyboxComposer = new EffectComposer(renderer);
+  const renderPass = new RenderPass(skyboxScene, skyboxCamera);
+  skyboxComposer.addPass(renderPass);
 
 
-function resetToSolarSystem() {
-  // Show the original solar system scene
-  scene.visible = true;
-  isExploringPlanet = false;
+  // Update movement based on key states
+  function updateMovement() {
+    if (skyboxControls.isLocked) {
+      const delta = 0.1;
+      const direction = new THREE.Vector3();
+      const frontVector = new THREE.Vector3();
+      const sideVector = new THREE.Vector3();
 
-  // Reset camera position
-  camera.position.set(-90, 140, 140);
-  camera.lookAt(scene.position);
+      frontVector.setFromMatrixColumn(skyboxCamera.matrix, 0);
+      frontVector.crossVectors(skyboxCamera.up, frontVector);
 
-  // Re-enable original orbit controls
-  orbit.enabled = true;
 
-  // Resume solar system animation
-  renderer.setAnimationLoop(animate);
+      direction.add(sideVector);
+      direction.normalize().multiplyScalar(moveSpeed * delta);
+      skyboxCamera.position.add(direction);
+    }
+  }
+
+// Animation loop for the skybox view
+function animateSkyboxView() {
+  requestAnimationFrame(animateSkyboxView);
+  skyboxComposer.render();
+}
+animateSkyboxView();
+
+// Return cleanup function for proper disposal
+return () => {
+  // Dispose of textures, materials, and geometry
+  materials.forEach(material => {
+    if (material.map) material.map.dispose();
+    material.dispose();
+  });
+
+  // Remove the blocker element
+  document.body.removeChild(blocker);
+
+  // Dispose of skybox controls
+  skyboxControls.dispose();
+  skyboxComposer.dispose();
+};
+}
+
+function resetToSolarSystem(cleanupSkybox) {
+// Perform cleanup of the skybox view
+if (cleanupSkybox) cleanupSkybox();
+
+// Make the solar system scene visible again
+scene.visible = true;
+
+// Reset camera position for the solar system view
+camera.position.set(-90, 140, 140);
+camera.lookAt(scene.position);
+
+// Re-enable orbit controls
+orbit.enabled = true;
+
+// Restore the solar system animation loop
+renderer.setAnimationLoop(animate);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const buttonContainer = document.getElementById('planet-buttons');
+  const planets = ['sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+  const planetColors = {
+    sun: '#FFD700',
+    mercury: '#A0522D',
+    venus: '#DEB887',
+    earth: '#4169E1',
+    mars: '#CD5C5C',
+    jupiter: '#DAA520',
+    saturn: '#F4A460',
+    uranus: '#87CEEB',
+    neptune: '#4682B4',
+    pluto: '#808080'
+  };
+
+  planets.forEach(planetName => {
+    const button = document.createElement('button');
+    button.textContent = planetName.charAt(0).toUpperCase() + planetName.slice(1);
+    button.className = 'planet-button';
+    button.style.backgroundColor = planetColors[planetName];
+
+    // Button click handler
+    button.addEventListener('click', function() {
+      console.log(`Button clicked: ${planetName}`);
+
+      // Find the planet by name
+      const planet = findPlanetInScene(planetName);
+      if (planet) {
+        console.log(`Planet found: ${planetName}`);
+        focusedPlanet = planet;
+        orbit.enabled = false; // Disable orbit controls when focusing on a planet
+
+        // Display planet information using your existing function
+        if (planetData[planetName] || planetName === 'sun') {
+          displayPlanetInfo(planetData[planetName] || {
+            name: 'Sun',
+            size: '1,391,000 km',
+            distance: '0 km (center of the solar system)',
+            educationalFact: 'The Sun is a massive ball of plasma at the center of our solar system, providing heat and light to Earth.',
+            funFact: 'The Sun accounts for 99.86% of the mass in the solar system!'
+          });
+        }
+
+        gsap.to(camera.position, {
+          duration: 2,
+          x: clickedObject.position.x + 50,
+          y: clickedObject.position.y + 50,
+          z: clickedObject.position.z + 50,
+          onUpdate: function () {
+            camera.lookAt(clickedObject.position);
+          }
+        });
+    
+        // Add the explore button with planet's image
+        const exploreButton = document.createElement('button');
+        exploreButton.innerHTML = `<img src="${planetName}.jpg" alt="${planetName}" /> Explore`;
+        exploreButton.style.position = 'absolute';
+        exploreButton.style.right = '20px';
+        exploreButton.style.top = '400px';
+        exploreButton.onclick = () => {
+          openExplorePanel(planet);
+          document.getElementById('planet-info').style.display = 'none'; // Hide the info panel
+        };
+        document.body.appendChild(exploreButton);
+      } else {
+        console.error(`Planet not found: ${planetName}`);
+        focusedPlanet = null;
+        orbit.enabled = true;
+      }
+    });
+
+    buttonContainer.appendChild(button);
+  });
+  
+});
+
+function findPlanetInScene(planetName) {
+  function search(obj) {
+    if (obj.name && obj.name.toLowerCase() === planetName.toLowerCase()) {
+      console.log('Planet found:', obj.name);
+      return obj;
+    }
+    for (let child of obj.children || []) {
+      const found = search(child);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  const result = search(scene);
+  if (!result) {
+    console.error('Planet not found in scene:', planetName);
+  }
+  return result;
 }
