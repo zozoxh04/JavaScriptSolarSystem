@@ -1,39 +1,5 @@
-import * as THREE from 'three';
-import * as dat from 'dat.gui';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { atmosphereVertexShader, atmosphereFragmentShader } from './atmosphereShader.js';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
-import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
-import { VignetteShader } from 'three/examples/jsm/shaders/VignetteShader';
 
 
-
-import starsTexture from './src/img/stars.jpg';
-import starsTexture2 from './src/img/stars2.jpg';
-import sunTexture from './src/img/sun.jpg';
-import mercuryTexture from './src/img/mercury.jpg';
-import venusTexture from './src/img/venus.jpg';
-import earthTexture from './src/img/earth.jpg';
-import marsTexture from './src/img/mars.jpg';
-import jupiterTexture from './src/img/jupiter.jpg';
-import saturnTexture from './src/img/saturn.jpg';
-import saturnRingTexture from './src/img/saturnring.jpg';
-import uranusTexture from './src/img/uranus.jpg';
-import uranusRingTexture from './src/img/uranusring.jpg';
-import neptuneTexture from './src/img/neptune.jpg';
-import plutoTexture from './src/img/pluto.jpg';
-import moonTexture from './src/img/moon.jpg';
-import europaTexture from './src/img/Europa.jpg';
-import ioTexture from './src/img/Io.jpg';
-import ganymedeTexture from './src/img/Ganymede.jpg';
-import callistoTexture from './src/img/Callisto.jpg';
-import asteroidTexture from './src/img/asteroid.jpg'
-
-
-let isPaused = false;
 let focusedPlanet = null;
 // Variables to track dragging
 let isDragging = false;
@@ -42,7 +8,7 @@ let dragStartY = 0;
 let dragThreshold = 5; // Minimum movement to consider it a drag
 let INTERSECTED;
 let isExploringPlanet = false;
-
+let isPaused = false;
 
 // Initialize renderer
 const renderer = new THREE.WebGLRenderer();
@@ -53,22 +19,22 @@ document.body.appendChild(renderer.domElement);
 
 // Create scene and camera
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 300000);
 const canvas = document.querySelector('canvas');
 
 
 // Define maximum and minimum zoom limits
-const zoomSpeed = 0.5; 
-const minZoom = 1; 
-const maxZoom = 10;  
+const zoomSpeed = 3; 
+
 
 
 // Set background
 const cubeTextureLoader = new THREE.CubeTextureLoader();
 scene.background = cubeTextureLoader.load([
-  starsTexture, starsTexture, starsTexture, 
-  starsTexture, starsTexture, starsTexture
+  starsTexture4, starsTexture4, starsTexture4, 
+  starsTexture4, starsTexture4, starsTexture4
 ]);
+
 
 
 // Set up orbit controls with zoom limits
@@ -77,15 +43,16 @@ camera.position.set(-90, 140, 140);
 orbit.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
 orbit.dampingFactor = 0.25;
 orbit.enableZoom = true; // Allow zooming
-orbit.minDistance = 20; // Minimum zoom distance
-orbit.maxDistance = 450; // Maximum zoom distance
+orbit.minDistance = 70; // Minimum zoom distance
+orbit.maxDistance = 120000; // Maximum zoom distance
 orbit.update();
+
 
 // Add lights
 const ambientLight = new THREE.AmbientLight(0x333333);
 scene.add(ambientLight);
 
-const pointLight = new THREE.PointLight(0xffffff, 3, 300);
+const pointLight = new THREE.PointLight(0xffff99, 3, 2000);
 pointLight.castShadow = true;
 scene.add(pointLight);
 
@@ -97,238 +64,173 @@ const settings = {
   showMoons: true,
   showAsteroidBelt: true,
   planetScale: 1,
-  pauseResume: function() {
-    isPaused = !isPaused;
-    this.name = isPaused ? "Resume" : "Pause";
-    gui.updateDisplay();
-  }
+
 };
 gui.add(settings, 'rotationSpeed', 0.1, 5).name('Time Speed');
 gui.add(settings, 'showOrbits').name('Show Orbits').onChange(toggleOrbits);
 gui.add(settings, 'showMoons').name('Show Moons').onChange(toggleMoons);
 gui.add(settings, 'showAsteroidBelt').name('Show Asteroid Belt').onChange(toggleAsteroid);
 gui.add(settings, 'planetScale', 0.5, 2).name('Planet Scale').onChange(updatePlanetScale);
-gui.add(settings, 'pauseResume').name('Pause');
 
 
-// Handle click events
-window.addEventListener('click', function (event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(scene.children, true);
 
-  if (intersects.length > 0) {
-    const clickedObject = intersects[0].object;
-    const planetName = clickedObject.name.toLowerCase();
 
-    if (planetData[planetName] || planetName === 'sun') {
-      focusedPlanet = clickedObject;
-      orbit.enabled = false; // Disable orbit controls when focusing on a planet
-    
-    if (planetData[planetName]) {
-      displayPlanetInfo(planetData[planetName]);
-    } else if (planetName === 'sun') {
-      displayPlanetInfo({ 
-        name: 'Sun', 
-        size: '1,391,000 km', 
-        distance: '0 km (center of the solar system)',
-        educationalFact: 'The Sun is a massive ball of plasma at the center of our solar system, providing heat and light to Earth.',
-        funFact: 'The Sun accounts for 99.86% of the mass in the solar system!'
-      });
-    } else {
-      displayPlanetInfo(planetData[planetName]);
-    }
+// Set up raycaster and mouse
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// Function to display planet information
+function displayPlanetInfo(planet, factType = 'educationalFact') {
+  const infoDiv = document.getElementById('planet-info');
+  if (!infoDiv) {
+    console.error('planet-info element not found');
+    return;
   }
+  
+  infoDiv.style.display = 'block';
+  infoDiv.innerHTML = `
+    <h2>${planet.name}</h2>
+    <p>Size: ${planet.size}</p>
+    <p>Distance from Sun: ${planet.distance}</p>
+    <p id="fact">${planet[factType]}</p>
+    <button id="eduBtn">Educational Fact</button>
+    <button id="funBtn">Fun Fact</button>
+    <button id="exitBtn">Exit</button>
+  `;
 
-    // Animate the camera to focus on the clicked planet
-    gsap.to(camera.position, {
-      duration: 2,
-      x: clickedObject.position.x + 50,
-      y: clickedObject.position.y + 50,
-      z: clickedObject.position.z + 50,
-      onUpdate: function () {
-        camera.lookAt(clickedObject.position);
-      }
-    });
+  // Stop propagation on planet-info div
+  infoDiv.addEventListener('click', (event) => {
+    event.stopPropagation();
+  });
 
-    // Add the explore button with planet's image
-    const exploreButton = document.createElement('button');
-    exploreButton.innerHTML = `<img src="${planetName}.jpg" alt="${planetName}" /> Explore`;
-    exploreButton.style.position = 'absolute';
-    exploreButton.style.right = '20px';
-    exploreButton.style.top = '400px';
-    exploreButton.onclick = () => {
-        openExplorePanel(clickedObject);
-        document.getElementById('planet-info').style.display = 'none'; // Hide the info panel
-    };
-    document.body.appendChild(exploreButton);
+  document.getElementById('eduBtn').addEventListener('click', () => {
+    document.getElementById('fact').innerText = planet.educationalFact;
+  });
 
-   
-  } else {
+  document.getElementById('funBtn').addEventListener('click', () => {
+    document.getElementById('fact').innerText = planet.funFact;
+  });
+  document.getElementById('exitBtn').addEventListener('click', () => {
+    infoDiv.style.display = 'none';
+  });
+}
 
-    focusedPlanet = null;
-    orbit.enabled = true;
-  }
 
-});
+// Create a plane geometry and material with the texture
+const geometry = new THREE.PlaneGeometry(100000, 100000);
+const material = new THREE.MeshBasicMaterial({ map: myTexture, transparent: true, opacity: 0 });
+const plane = new THREE.Mesh(geometry, material);
 
- 
+// Add the plane to the scene
+scene.add(plane);
+
+// Update the plane's position to raise it higher
+plane.position.set(0, 500, 0); // Adjust the y-value to raise the plane
+
+// Rotate the plane 60º around the x-axis
+plane.rotation.x = THREE.MathUtils.degToRad(-30); // Convert degrees to radians
+
+// Make the plane unclickable
+plane.raycast = () => {};
+
+// Load texture for the back view
+const myTextureBack = textureLoader.load('./src/img/milkywayback.jpg');
+
+// Create a plane geometry and material with the back texture
+const geometryBack = new THREE.PlaneGeometry(100000, 100000);
+const materialBack = new THREE.MeshBasicMaterial({ map: myTextureBack, transparent: true, opacity: 1 }); // Set opacity to 1
+const planeBack = new THREE.Mesh(geometryBack, materialBack);
+
+// Add the back plane to the scene
+scene.add(planeBack);
+
+// Update the back plane's position to be the same as the front
+planeBack.position.set(0, 500, 0); // Slightly adjust the position to avoid z-fighting
+
+
+// Make the back plane unclickable
+planeBack.raycast = () => {};
+
 
 // Animation function
 function animate() {
   if (scene.visible) {
+    orbit.update();
+    if (!isPaused) {
+      const timeSpeed = settings.rotationSpeed;
 
-  if (!isPaused) {
+      // Rotate planets
+      sun.rotateY(0.004 * timeSpeed);
+      mercury.mesh.rotateY(0.004 * timeSpeed);
+      mercury.obj.rotateY(0.04 * timeSpeed);
+      venus.mesh.rotateY(0.002 * timeSpeed);
+      venus.obj.rotateY(0.015 * timeSpeed);
+      earth.mesh.rotateY(0.02 * timeSpeed); 
+      earth.obj.rotateY(0.01 * timeSpeed); 
 
+      // Rotate Moon around Earth
+      earth.obj.children.forEach(child => { 
+        if (child.type === 'Object3D' && child.children[0].name === 'Moon') { 
+          child.rotation.y += 0.01 * timeSpeed; // Adjust speed as needed 
+        } 
+      });
+      mars.mesh.rotateY(0.018 * timeSpeed);
+      mars.obj.rotateY(0.008 * timeSpeed);
+      jupiter.mesh.rotateY(0.04 * timeSpeed);
+      jupiter.obj.rotateY(0.002 * timeSpeed);
+      saturn.mesh.rotateY(0.038 * timeSpeed);
+      saturn.obj.rotateY(0.0009 * timeSpeed);
+      uranus.mesh.rotateY(0.03 * timeSpeed);
+      uranus.obj.rotateY(0.0004 * timeSpeed);
+      neptune.mesh.rotateY(0.032 * timeSpeed);
+      neptune.obj.rotateY(0.0001 * timeSpeed);
+      pluto.mesh.rotateY(0.008 * timeSpeed);
+      pluto.obj.rotateY(0.00007 * timeSpeed);
+      asteroidBelt.rotateY(0.0001);
+      smallerAsteroidBelt.rotateY(0.0001);
 
-  const timeSpeed = settings.rotationSpeed;
+      if (focusedPlanet) {
+        focusOnPlanet(focusedPlanet); // Call the helper function
+      }
 
-  sun.rotateY(0.004 * timeSpeed);
-  mercury.mesh.rotateY(0.004 * timeSpeed);
-  mercury.obj.rotateY(0.04 * timeSpeed);
-  venus.mesh.rotateY(0.002 * timeSpeed);
-  venus.obj.rotateY(0.015 * timeSpeed);
-  earth.mesh.rotateY(0.02 * timeSpeed);
-  earth.obj.rotateY(0.01 * timeSpeed);
-  mars.mesh.rotateY(0.018 * timeSpeed);
-  mars.obj.rotateY(0.008 * timeSpeed);
-  jupiter.mesh.rotateY(0.04 * timeSpeed);
-  jupiter.obj.rotateY(0.002 * timeSpeed);
-  saturn.mesh.rotateY(0.038 * timeSpeed);
-  saturn.obj.rotateY(0.0009 * timeSpeed);
-  uranus.mesh.rotateY(0.03 * timeSpeed);
-  uranus.obj.rotateY(0.0004 * timeSpeed);
-  neptune.mesh.rotateY(0.032 * timeSpeed);
-  neptune.obj.rotateY(0.0001 * timeSpeed);
-  pluto.mesh.rotateY(0.008 * timeSpeed);
-  pluto.obj.rotateY(0.00007 * timeSpeed);
-  asteroidBelt.rotateY(0.0001);
-  smallerAsteroidBelt.rotateY(0.0001);
+      // Check camera distance 
+      const distance = camera.position.distanceTo(scene.position);
+      if (distance > 10000) {
+        plane.visible = true; 
+        planeBack.visible = true; // Make the back plane visible
 
-  if (focusedPlanet) {
-    const offset = new THREE.Vector3(30, 15, 30);
-    const cameraTarget = new THREE.Vector3();
-    focusedPlanet.getWorldPosition(cameraTarget);
-    const desiredPosition = cameraTarget.clone().add(offset);
+        // Fade in the planes
+        if (plane.material.opacity < 1) {
+          plane.material.opacity += 0.01; // Adjust the speed of the fade-in as needed
+          planeBack.material.opacity += 0.1; // Synchronize the fade-in for the back plane
+        }
+      } else if (distance <= 10000) {
+        // Fade out the planes
+        if (plane.material.opacity > 0) {
+          plane.material.opacity -= 0.01; // Adjust the speed of the fade-out as needed
+          planeBack.material.opacity -= 0.5; // Synchronize the fade-out for the back plane
+        } else {
+          plane.visible = false; 
+          planeBack.visible = false; // Hide the back plane
+        }
+      }
+      updateGridOpacity();
+      updateLabelScales();
 
-
-    camera.position.lerp(desiredPosition, 0.05);
-    camera.lookAt(cameraTarget);
-    
-  }
-
-  // Rotate moons
-  earth.obj.children.forEach(moon => {
-    if (moon.name === 'Moon') {
-      moon.rotateY(0.01 * timeSpeed);
+      // Render the scene
+      renderer.render(scene, camera);
     }
-  });
-
-  jupiter.obj.children.forEach(moon => {
-    if (['Io', 'Europa', 'Ganymede', 'Callisto'].includes(moon.name)) {
-      moon.rotateY(0.02 * timeSpeed);
-    }
-  });
-
   }
-  
+}
 
- // Render the scene
- renderer.render(scene, camera);
-}
-}
+
 
 // Ensure the animate loop is set
 renderer.setAnimationLoop(animate);
 
 
-// Event listener for the Start Exploration button
-document.getElementById('start-button').addEventListener('click', function () {
-  // Hide the starter screen
-  document.getElementById('starter-screen').style.display = 'none';
 
-  // Show the hidden elements
-  document.getElementById('planet-info').style.display = 'block';
-  document.getElementById('gui-container').style.display = 'block';
-  document.getElementById('planet-buttons').style.display = 'flex';
-
-  // Add the Reset View button dynamically
-  addResetViewButton();
-});
-
-
-
-// Handle window resizing
-window.addEventListener('resize', function() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-document.getElementById('start-button').addEventListener('click', function() {
-  // Hide the starter screen
-  document.getElementById('starter-screen').style.display = 'none';
-  
-  // Start Three.js simulation
-  startSimulation();
-});
-function startSimulation() {
-  // This function should initialize your Three.js scene and start the animation
-  console.log('Starting simulation...');
-  // Add your Three.js initialization code here
-}
-
-// Listen for mouse wheel event to zoom in and out
-window.addEventListener('wheel', (event) => {
-  // Prevent the default scroll behavior
-  event.preventDefault();
-
-  // Update camera position and ensure it respects zoom limits
-  const zoomDirection = event.deltaY > 0 ? 1 : -1; // Determine zoom direction
-  const zoomAmount = zoomSpeed * zoomDirection;
-
-  // Check if the new position exceeds the limits
-  const newZ = camera.position.z + zoomAmount;
-  if (newZ > orbit.minDistance && newZ < orbit.maxDistance) {
-    camera.position.z = newZ; // Update camera position if within bounds
-  } 
-}, { passive: false });  // Add this option
-
-
-// Function to handle mouse down (drag start)
-canvas.addEventListener('mousedown', (event) => {
-  isDragging = false;  // Reset drag state
-  dragStartX = event.clientX;
-  dragStartY = event.clientY;
-});
-
-document.addEventListener('mousemove', (event) => {
-  if (isExploringPlanet) {
-      mouseX = (event.clientX - window.innerWidth / 2) * 0.002;
-      mouseY = (event.clientY - window.innerHeight / 2) * 0.002;
-  }
-});
-
-// Function to handle mouse move (detect drag)
-canvas.addEventListener('mousemove', (event) => {
-  const deltaX = Math.abs(event.clientX - dragStartX);
-  const deltaY = Math.abs(event.clientY - dragStartY);
-
-  // If movement exceeds threshold, it's considered a drag
-  if (deltaX > dragThreshold || deltaY > dragThreshold) {
-    isDragging = true;
-  }
-});
-
-// Function to handle mouse up (drag end / click detection)
-canvas.addEventListener('mouseup', (event) => {
-  // Only call handlePlanetClick if no dragging occurred
-  if (!isDragging) {
-    handlePlanetClick(event);  // This is a genuine click
-  }
-});
-
+// Handle clicks on planets
 function handlePlanetClick(event) {
   // Prevent the default behavior
   event.preventDefault();
@@ -340,8 +242,16 @@ function handlePlanetClick(event) {
   // Update the picking ray with the camera and mouse position
   raycaster.setFromCamera(mouse, camera);
 
-  // Calculate objects intersecting the picking ray
-  const intersects = raycaster.intersectObjects(scene.children, true);
+  // Calculate objects intersecting the picking ray and filter out scale markers and grids
+  const intersects = raycaster.intersectObjects(scene.children, true).filter(intersection => {
+    // Check if the object or its parent is not part of scaleMarkers, grid, secondaryGrid, or the plane
+    let obj = intersection.object;
+    while (obj) {
+      if (obj === scaleMarkers || obj === grid || obj === secondaryGrid || obj === plane) return false;
+      obj = obj.parent;
+    }
+    return true;
+  });
 
   if (intersects.length > 0) {
     // Get the first intersected object
@@ -349,32 +259,31 @@ function handlePlanetClick(event) {
 
     // Ignore the asteroid belt objects here
     if (object === asteroidBelt || object === smallerAsteroidBelt) {
-      return;  // Don't do anything if it's the asteroid belt
+      return; // Don't do anything if it's the asteroid belt
     }
 
     // Check if the clicked object is a planet
     if (planetData[object.name.toLowerCase()]) {
-        focusedPlanet = object;
-        orbit.enabled = false;
-        displayPlanetInfo(planetData[object.name.toLowerCase()]);
-        
-        // Animate camera to focus on the clicked planet
-        gsap.to(camera.position, {
-            duration: 2,
-            x: object.position.x + 50,
-            y: object.position.y + 50,
-            z: object.position.z + 50,
-            onUpdate: function () {
-                camera.lookAt(object.position);
-            }
-        });
+      focusedPlanet = object;
+      orbit.enabled = false;
+      displayPlanetInfo(planetData[object.name.toLowerCase()]);
+
+      // Animate camera to focus on the clicked planet
+      gsap.to(camera.position, {
+        duration: 2,
+        x: object.position.x + 50,
+        y: object.position.y + 50,
+        z: object.position.z + 50,
+        onUpdate: function () {
+          camera.lookAt(object.position);
+        }
+      });
     }
   }
 }
 
-
-// Add this event listener to your canvas
 canvas.addEventListener('click', handlePlanetClick);
+
 
 function checkHover() {
   raycaster.setFromCamera(mouse, camera);
@@ -382,17 +291,21 @@ function checkHover() {
 
   if (intersects.length > 0) {
     if (INTERSECTED != intersects[0].object) {
-      if (INTERSECTED) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
+      if (INTERSECTED) INTERSECTED.material = INTERSECTED.currentMaterial;
       INTERSECTED = intersects[0].object;
-      INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-      INTERSECTED.material.emissive.setHex(0xffffff); // Highlight color
-      document.getElementById('planet-info').innerText = INTERSECTED.name; // Show name
+      INTERSECTED.currentMaterial = INTERSECTED.material;
+      INTERSECTED.material = highlightedMaterial;
+      overlay.innerHTML = INTERSECTED.name;
+      currentPlanet = INTERSECTED;
     }
   } else {
-    if (INTERSECTED) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
+    if (INTERSECTED) INTERSECTED.material = INTERSECTED.currentMaterial;
     INTERSECTED = null;
+    overlay.innerHTML = '';
+    currentPlanet = null;
   }
 }
+
 
 function openExplorePanel(planet) {
   scene.visible = false;
@@ -423,6 +336,78 @@ function openExplorePanel(planet) {
   const planetObject = [mercury, venus, earth, mars, jupiter, saturn, uranus, neptune, pluto]
       .find(p => p.mesh.name === planet.name);
 
+  function createTextureEditPanel(planet, surfaceMesh) {
+    // Only create this panel for Earth
+    if (planet.name !== 'Earth') return null;
+
+    // Create a container for the texture edit panel
+    const editPanel = document.createElement('div');
+    editPanel.id = 'earth-texture-edit-panel';
+    editPanel.style.cssText = `
+      position: fixed;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 10px;
+      padding: 15px;
+      color: white;
+      z-index: 1000;
+      display: none;
+    `;
+
+    // Texture buttons
+    const textureButtons = [
+      { 
+        name: 'Default', 
+        texture: './src/img/earth.jpg' 
+      },
+      { 
+        name: 'Winter', 
+        texture: './src/img/earthwinter.jpg' 
+      },
+      { 
+        name: 'Summer', 
+        texture: './src/img/earthsummer.jpg' 
+      },
+      { 
+        name: 'City Lights', 
+        texture: './src/img/earthlight.jpg' 
+      }
+    ];
+
+    // Create texture selection buttons
+    textureButtons.forEach(({ name, texture }) => {
+      const button = document.createElement('button');
+      button.textContent = name;
+      button.style.cssText = `
+        display: block;
+        width: 100%;
+        margin: 10px 0;
+        padding: 10px;
+        background-color: rgba(255,255,255,0.1);
+        color: white;
+        border: 1px solid white;
+        border-radius: 5px;
+        cursor: pointer;
+      `;
+      
+      button.addEventListener('click', () => {
+        // Load and apply new texture
+        const newTexture = textureLoader.load(texture);
+        surfaceMesh.material.map = newTexture;
+        surfaceMesh.material.needsUpdate = true;
+      });
+
+      editPanel.appendChild(button);
+    });
+
+    // Add panel to document
+    document.body.appendChild(editPanel);
+
+    return editPanel;
+  }
+
   if (planetObject) {
     // Create a smaller version of the planet for better viewing
     const surfaceGeo = new THREE.SphereGeometry(100, 60, 60);
@@ -436,6 +421,34 @@ function openExplorePanel(planet) {
     const surfaceMesh = new THREE.Mesh(surfaceGeo, surfaceMat);
     surfaceMesh.rotation.y = Math.PI;
     planetScene.add(surfaceMesh);
+
+    // Create texture edit panel
+    const textureEditPanel = createTextureEditPanel(planet, surfaceMesh);
+
+    // Add Edit button to toggle texture panel
+    const editButton = document.createElement('button');
+    editButton.textContent = 'Edit';
+    editButton.style.cssText = `
+      position: fixed;
+      left: 20px;
+      top: 500px;
+      z-index: 1001;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    `;
+
+    editButton.addEventListener('click', () => {
+      if (textureEditPanel) {
+        textureEditPanel.style.display = 
+          textureEditPanel.style.display === 'none' ? 'block' : 'none';
+      }
+    });
+
+    document.body.appendChild(editButton);
 
     // Create atmosphere with glow effect
     const atmosphereGeo = new THREE.SphereGeometry(100, 60, 60);
@@ -547,6 +560,37 @@ function openExplorePanel(planet) {
   // Create UI Panel
   createExplorationPanel(planet, exploreControls, planetScene, composer);
 }
+// Helper function to get planet-specific atmosphere colors
+function getPlanetAtmosphereColor(planetName) {
+  const colors = {
+    'Mercury': new THREE.Vector3(0.7, 0.7, 0.7),
+    'Venus': new THREE.Vector3(0.9, 0.7, 0.3),
+    'Earth': new THREE.Vector3(0.3, 0.5, 0.9),
+    'Mars': new THREE.Vector3(0.9, 0.4, 0.2),
+    'Jupiter': new THREE.Vector3(0.8, 0.6, 0.4),
+    'Saturn': new THREE.Vector3(0.9, 0.8, 0.5),
+    'Uranus': new THREE.Vector3(0.4, 0.7, 0.8),
+    'Neptune': new THREE.Vector3(0.2, 0.4, 0.9),
+    'Pluto': new THREE.Vector3(0.6, 0.6, 0.7)
+  };
+  return colors[planetName] || new THREE.Vector3(1, 1, 1);
+}
+
+// Helper function to get planet-specific atmosphere density
+function getPlanetAtmosphereDensity(planetName) {
+  const densities = {
+    'Mercury': 0.1,
+    'Venus': 2.0,
+    'Earth': 1.0,
+    'Mars': 0.3,
+    'Jupiter': 1.5,
+    'Saturn': 1.3,
+    'Uranus': 1.2,
+    'Neptune': 1.2,
+    'Pluto': 0.1
+  };
+  return densities[planetName] || 1.0;
+}
 
 // Helper function to create the exploration panel UI
 function createExplorationPanel(planet, exploreControls, planetScene, composer) {
@@ -569,7 +613,86 @@ function createExplorationPanel(planet, exploreControls, planetScene, composer) 
     </ul>
     <button id="viewSkybox">View Surface Skybox</button>
     <button id="returnToSolarSystem">Return to Solar System</button>
+    <button id="lightingButton">Lighting</button>
   `;
+
+  // Lighting control panel
+  const lightingPanel = document.createElement('div');
+  lightingPanel.id = 'lightingPanel';
+  lightingPanel.style.cssText = `
+    position: fixed;
+    left: 20px;
+    top: 200px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 15px;
+    color: white;
+    z-index: 1000;
+    display: none;
+  `;
+  lightingPanel.innerHTML = `
+    <h3>Lighting Controls</h3>
+    <p>Click on the planet to direct sunlight</p>
+    <div>
+      <label>Sun Intensity: </label>
+      <input type="range" id="sunIntensity" min="0" max="2" step="0.1" value="1">
+    </div>
+    <div>
+      <label>Ambient Light: </label>
+      <input type="range" id="ambientIntensity" min="0" max="1" step="0.1" value="0.25">
+    </div>
+  `;
+
+  document.body.appendChild(lightingPanel);
+
+  // Lighting button toggle
+  const lightingButton = panel.querySelector('#lightingButton');
+  lightingButton.addEventListener('click', () => {
+    lightingPanel.style.display = 
+      lightingPanel.style.display === 'none' ? 'block' : 'none';
+  });
+
+  // Sun intensity slider
+  const sunIntensitySlider = lightingPanel.querySelector('#sunIntensity');
+  sunIntensitySlider.addEventListener('input', (e) => {
+    light.intensity = parseFloat(e.target.value);
+    sunMesh.material.emissiveIntensity = parseFloat(e.target.value) * 2;
+  });
+
+  // Ambient light intensity slider
+  const ambientIntensitySlider = lightingPanel.querySelector('#ambientIntensity');
+  ambientIntensitySlider.addEventListener('input', (e) => {
+    ambientLight.intensity = parseFloat(e.target.value);
+  });
+
+  // Click-to-light feature
+  function onPlanetClick(event) {
+    // Raycaster to determine click location on planet
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2(
+      (event.clientX / window.innerWidth) * 2 - 1,
+      -(event.clientY / window.innerHeight) * 2 + 1
+    );
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(surfaceMesh);
+
+    if (intersects.length > 0) {
+      // Get the intersection point
+      const point = intersects[0].point;
+      
+      // Move and orient sun towards clicked point
+      const sunPosition = point.clone().normalize().multiplyScalar(200);
+      light.position.copy(sunPosition);
+      sunMesh.position.copy(sunPosition);
+
+      // Update atmosphere shader uniforms for lighting
+      atmosphereMesh.material.uniforms.sunPosition.value = sunPosition.normalize();
+    }
+  }
+
+  // Add click event listener to renderer
+  renderer.domElement.addEventListener('click', onPlanetClick);
 
   panel.querySelector('#viewSkybox').addEventListener('click', () => {
     openSkyboxView(planet, exploreControls, planetScene, composer);
@@ -578,275 +701,14 @@ function createExplorationPanel(planet, exploreControls, planetScene, composer) 
   panel.querySelector('#returnToSolarSystem').addEventListener('click', () => {
     isExploringPlanet = false;
     exploreControls.dispose();
+    
+    // Remove event listeners
+    renderer.domElement.removeEventListener('click', onPlanetClick);
+    
     resetToSolarSystem();
     document.body.removeChild(panel);
+    document.body.removeChild(lightingPanel);
   });
 
   document.body.appendChild(panel);
-}
-
-// New function to handle skybox view
-function openSkyboxView(planet, prevControls, prevScene, prevComposer) {
-  // Dispose of previous controls and scene
-  prevControls.dispose();
-
-  // Create new scene for skybox view
-  const skyboxScene = new THREE.Scene();
-
-  // Create new camera for skybox view
-  const skyboxCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  skyboxCamera.position.set(0, 0, 0);
-  console.log('Camera position:', skyboxCamera.position);
-
-  // Create new controls for first-person view
-  const skyboxControls = new PointerLockControls(skyboxCamera, renderer.domElement);
-
-  // Create instruction overlay
-  const blocker = document.createElement('div');
-  blocker.style.position = 'absolute';
-  blocker.style.width = '100%';
-  blocker.style.height = '100%';
-  blocker.style.backgroundColor = 'rgba(0,0,0,0.5)';
-  blocker.style.display = 'flex';
-  blocker.style.justifyContent = 'center';
-  blocker.style.alignItems = 'center';
-  blocker.style.zIndex = '999';
-  blocker.innerHTML = '<div style="color: white; text-align: center;"><p>Click to look around</p><p>ESC to show/hide mouse</p></div>';
-  document.body.appendChild(blocker);
-
-  // Setup click to start
-  blocker.addEventListener('click', () => {
-    skyboxControls.lock();
-  });
-
-  skyboxControls.addEventListener('lock', () => {
-    blocker.style.display = 'none';
-  });
-
-  skyboxControls.addEventListener('unlock', () => {
-    blocker.style.display = 'flex';
-  });
-
-  // Create a TextureLoader instance
-  const textureLoader = new THREE.TextureLoader();
-
-  // Load skybox textures based on planet
-  const skyboxTextures = getSkyboxTextures(planet.name);
-
-  // Create an array to store the materials
-  const materials = [];
-
-  // Load each texture and create materials
-  for (let i = 0; i < 6; i++) {
-    const texture = textureLoader.load(skyboxTextures[i], (texture) => {
-      // Log when each texture is loaded
-      console.log(`Loaded texture: ${skyboxTextures[i]}`);
-      // Trigger a render when texture loads
-      skyboxComposer.render();
-    }, undefined, (error) => {
-      console.error(`Error loading texture: ${skyboxTextures[i]}`, error);
-    });
-    materials.push(new THREE.MeshBasicMaterial({
-      map: texture,
-      side: THREE.BackSide
-    }));
-  }
-
-  // Create skybox cube with individual materials for each face
-  const skyboxGeo = new THREE.BoxGeometry(500, 500, 500);
-  const skybox = new THREE.Mesh(skyboxGeo, materials);
-  skyboxScene.add(skybox);
-
-  // Create new effect composer for skybox view
-  const skyboxComposer = new EffectComposer(renderer);
-  const renderPass = new RenderPass(skyboxScene, skyboxCamera);
-  skyboxComposer.addPass(renderPass);
-
-  // Optional: Add vignette effect for atmosphere
-  try {
-    const vignettePass = new ShaderPass(VignetteShader);
-    vignettePass.uniforms.darkness.value = 1;
-    vignettePass.uniforms.offset.value = 0.8;
-    skyboxComposer.addPass(vignettePass);
-  } catch (error) {
-    console.log('Vignette shader not available, skipping effect');
-  }
-
-  // Update UI panel for skybox view
-  const skyboxPanel = document.createElement('div');
-  skyboxPanel.style.position = 'absolute';
-  skyboxPanel.style.left = '20px';
-  skyboxPanel.style.top = '20px';
-  skyboxPanel.style.padding = '20px';
-  skyboxPanel.style.background = 'rgba(0, 0, 0, 0.7)';
-  skyboxPanel.style.color = 'white';
-  skyboxPanel.style.borderRadius = '10px';
-  skyboxPanel.style.zIndex = '1000';
-  skyboxPanel.innerHTML = `
-    <h2>${planet.name} Surface
-  `;
-  
-  document.body.appendChild(skyboxPanel);
-  
-  // Animation loop for skybox view
-  function animateSkyboxView() {
-    requestAnimationFrame(animateSkyboxView);
-    
-    // Always render, not just when locked
-    skyboxComposer.render();
-  }
-  
-  // Start the animation loop
-  animateSkyboxView();
-  
-  // Return cleanup function
-  return () => {
-    skyboxControls.dispose();
-    skyboxScene.remove(skybox);
-    skyboxGeo.dispose();
-    materials.forEach(material => material.dispose());
-    document.body.removeChild(skyboxPanel);
-    document.body.removeChild(blocker);
-  };
-}
-
-
-// Helper function to get skybox textures for each planet
-function getSkyboxTextures(planetName) {
-  const baseUrl = '/Users/zahrahashem/Desktop/solar_sys/src/img/Skybox';  
-  const skyboxes = {
-    'Mercury': [
-      'mercury_ft.jpg', 'mercury_bk.jpg',
-      'mercury_up.jpg', 'mercury_dn.jpg',
-      'mercury_rt.jpg', 'mercury_lt.jpg'
-    ],
-    'Venus': [
-      'venusft.jpg', 'venusbk.jpg',
-      'venusup.jpg', 'venusdn.jpg',
-      'venusrt.jpg', 'venuslt.jpg'
-    ],
-    'Earth': [
-      'earthft.jpg', 'earthbk.jpg',
-      'earthup.jpg', 'earthdn.jpg',
-      'earthrt.jpg', 'earthlt.jpg'
-    ],
-    // Add similar entries for other planets...
-  };
-  
-  return skyboxes[planetName].map(texture => baseUrl + planetName.toLowerCase() + '/' + texture);
-}
-
-
-
-function resetToSolarSystem() {
-  // Show the original solar system scene
-  scene.visible = true;
-  isExploringPlanet = false;
-
-  // Reset camera position
-  camera.position.set(-90, 140, 140);
-  camera.lookAt(scene.position);
-
-  // Re-enable original orbit controls
-  orbit.enabled = true;
-
-  // Resume solar system animation
-  renderer.setAnimationLoop(animate);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const buttonContainer = document.getElementById('planet-buttons');
-  const planets = ['sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
-  const planetColors = {
-    sun: '#FFD700',
-    mercury: '#A0522D',
-    venus: '#DEB887',
-    earth: '#4169E1',
-    mars: '#CD5C5C',
-    jupiter: '#DAA520',
-    saturn: '#F4A460',
-    uranus: '#87CEEB',
-    neptune: '#4682B4',
-    pluto: '#808080'
-  };
-
-  planets.forEach(planetName => {
-    const button = document.createElement('button');
-    button.textContent = planetName.charAt(0).toUpperCase() + planetName.slice(1);
-    button.className = 'planet-button';
-    button.style.backgroundColor = planetColors[planetName];
-
-    // Button click handler
-    button.addEventListener('click', function() {
-      console.log(`Button clicked: ${planetName}`);
-
-      // Find the planet by name
-      const planet = findPlanetInScene(planetName);
-      if (planet) {
-        console.log(`Planet found: ${planetName}`);
-        focusedPlanet = planet;
-        orbit.enabled = false; // Disable orbit controls when focusing on a planet
-
-        // Display planet information using your existing function
-        if (planetData[planetName] || planetName === 'sun') {
-          displayPlanetInfo(planetData[planetName] || {
-            name: 'Sun',
-            size: '1,391,000 km',
-            distance: '0 km (center of the solar system)',
-            educationalFact: 'The Sun is a massive ball of plasma at the center of our solar system, providing heat and light to Earth.',
-            funFact: 'The Sun accounts for 99.86% of the mass in the solar system!'
-          });
-        }
-
-        gsap.to(camera.position, {
-          duration: 2,
-          x: clickedObject.position.x + 50,
-          y: clickedObject.position.y + 50,
-          z: clickedObject.position.z + 50,
-          onUpdate: function () {
-            camera.lookAt(clickedObject.position);
-          }
-        });
-    
-        // Add the explore button with planet's image
-        const exploreButton = document.createElement('button');
-        exploreButton.innerHTML = `<img src="${planetName}.jpg" alt="${planetName}" /> Explore`;
-        exploreButton.style.position = 'absolute';
-        exploreButton.style.right = '20px';
-        exploreButton.style.top = '400px';
-        exploreButton.onclick = () => {
-          openExplorePanel(planet);
-          document.getElementById('planet-info').style.display = 'none'; // Hide the info panel
-        };
-        document.body.appendChild(exploreButton);
-      } else {
-        console.error(`Planet not found: ${planetName}`);
-        focusedPlanet = null;
-        orbit.enabled = true;
-      }
-    });
-
-    buttonContainer.appendChild(button);
-  });
-  
-});
-
-function findPlanetInScene(planetName) {
-  function search(obj) {
-    if (obj.name && obj.name.toLowerCase() === planetName.toLowerCase()) {
-      console.log('Planet found:', obj.name);
-      return obj;
-    }
-    for (let child of obj.children || []) {
-      const found = search(child);
-      if (found) return found;
-    }
-    return null;
-  }
-
-  const result = search(scene);
-  if (!result) {
-    console.error('Planet not found in scene:', planetName);
-  }
-  return result;
 }
