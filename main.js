@@ -28,7 +28,7 @@ import {
 } from './transitions.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
-import starsTexture2 from './stars2.jpg';
+import starsTexture2 from './src/img/stars2.jpg';
 import starsTexture3 from './src/img/stars3.jpg';
 import starsTexture4 from './src/img/starsback.jpg';
 import starsTexture from './src/img/stars.jpg';
