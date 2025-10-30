@@ -36,9 +36,8 @@ import starsTexture from './src/img/stars.jpg';
 import sunTexture from './src/img/sun.jpg';
 import mercuryTexture from './src/img/mercury.jpg';
 import venusTexture from './src/img/venus.jpg';
-import venusTexture2 from './src/img/venus2.jpg';
-import venusTexture3 from './src/img/venus3.jpg';
-import venusTexture5 from './src/img/venus5.jpg';
+import venusTexture2 from './src/img/Venus2.jpg';
+import venusTexture3 from './src/img/Venus3.jpg';
 
 import earthTexture from './src/img/earth.jpg';
 import marsTexture from './src/img/mars.jpg';
