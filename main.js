@@ -38,6 +38,7 @@ import mercuryTexture from './src/img/mercury.jpg';
 import venusTexture from './src/img/venus.jpg';
 import venusTexture2 from './src/img/Venus2.jpg';
 import venusTexture3 from './src/img/Venus3.jpg';
+import venusTexture5 from './src/img/Venus5.jpg';
 
 import earthTexture from './src/img/earth.jpg';
 import marsTexture from './src/img/mars.jpg';
