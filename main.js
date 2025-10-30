@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as dat from 'dat.gui';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { atmosphereVertexShader, atmosphereFragmentShader } from '/Users/zahrahashem/Desktop/solar_sys/atmosphereShader.js';
+import { atmosphereVertexShader, atmosphereFragmentShader } from './atmosphereShader.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
