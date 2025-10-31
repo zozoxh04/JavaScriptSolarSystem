@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from 'https://unpkg.com/three/build/three.module.js';
 import * as dat from 'dat.gui';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { atmosphereVertexShader, atmosphereFragmentShader } from './atmosphereShader.js';
