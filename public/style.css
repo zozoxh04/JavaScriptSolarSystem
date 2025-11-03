@@ -1,0 +1,490 @@
+#starter-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7); /* Slightly dark overlay */
+  z-index: 9999; /* High z-index to ensure it's on top */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all; /* Ensure it captures all pointer events */
+}
+
+#planet-info {
+  position: absolute;
+  top: 20px;
+  left: -300px;  /* Start off-screen */
+  width: 300px;
+  height: auto;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  transition: transform 0.5s ease-in-out;
+  z-index: 10;
+}
+
+/* When panel is active */
+.panel-active #planet-info {
+  transform: translateX(300px);
+}
+
+/* Shift the main scene when panel is active */
+.panel-active canvas {
+  transform: translateX(300px);
+  transition: transform 0.5s ease-in-out;
+}
+
+/* New navigation panel styles */
+#planet-buttons {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 15px;
+  border-radius: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 800px;
+  z-index: 1000;
+}
+
+#menu-container {
+  position: absolute;
+  top: 50px;
+  left: 20px;
+  width: 200px;
+  background: rgba(10, 25, 50, 0.8); /* Dark blue transparent background */
+  border: 2px solid #1c74d9; /* Glowing blue border */
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  clip-path: polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%); /* Angled edges */
+}
+
+.menu-button {
+  width: 180px;
+  padding: 12px;
+  background: none;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  color: white;
+  font-size: 14px;
+  text-transform: uppercase;
+  font-family: 'Arial', sans-serif;
+  text-align: center;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease-in-out;
+  clip-path: polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%);
+}
+
+.menu-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: white;
+  transform: scale(1.05);
+}
+
+html {
+  cursor: url('./assets/cursor.png'), auto;
+}
+
+.cursor-click-active {
+  cursor: url('./assets/cursor 2.png'), auto;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Courier New', monospace;
+}
+
+#bg-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  object-fit: cover;
+}
+
+.content-overlay {
+  position: relative;
+  z-index: 1;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  border-radius: 10px;
+}
+
+h1 {
+  font-size: 3em;
+  margin-bottom: 20px;
+}
+
+p {
+  font-size: 1.2em;
+  margin-bottom: 30px;
+  max-width: 600px;
+}
+
+#planet-info {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background-color: rgba(255, 255, 255, 0.9); /* White panel */
+  width: 400px;
+  height: auto;
+  padding: 15px;
+  border-radius: 10px;
+  display: none;
+  z-index: 10;
+  color: black;
+  font-size: 14px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+#planet-info h2 {
+  text-align: center;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #9b00b3;
+}
+
+#gui-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+}
+
+.planet-button {
+  min-width: 80px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  color: white;
+  font-family: 'Franklin Gothic Medium';
+  font-weight: bold;
+  cursor: pointer;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.planet-button:hover {
+  transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .planet-button {
+    padding: 6px 12px;
+    font-size: 0.9em;
+    min-width: 60px;
+  }
+}
+
+#pauseButton {
+  position: fixed;
+  bottom: 2px;
+  left: 35%;
+  transform: translateX(-50%);
+  padding: 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  z-index: 1000;
+  width: 60px; /* Set a fixed width */ 
+  height: 60px; /* Set a fixed height */
+}
+
+.toggle-button {
+  position: fixed;
+  bottom: 150px;
+  left: 20px;
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-button:hover {
+  background-color: #0056b3;
+}
+
+/* Add this to your CSS file or include it within a <style> tag in your HTML */
+
+/* Transition overlay animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+@keyframes scaleDown {
+  from { transform: scale(1); }
+  to { transform: scale(0); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(20px); opacity: 0; }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Custom star animation for the transition overlay */
+@keyframes twinkle {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+/* Particle styling */
+.transition-particle {
+  position: absolute;
+  background-color: #00d8e6;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 10px rgba(0, 216, 230, 0.8);
+  transition: transform 2s ease, opacity 1s ease;
+}
+
+/* Starfield background for transition */
+.transition-stars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(20, 25, 45, 0.9) 0%, rgba(5, 10, 20, 0.95) 100%);
+  z-index: 9997;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+/* Star elements in the starfield */
+.star {
+  position: absolute;
+  background-color: #fff;
+  border-radius: 50%;
+  animation: twinkle 4s infinite ease-in-out;
+}
+
+/* Solar system button hover effects */
+.planet-button:hover {
+  transform: scale(1.1) translateY(-5px) !important;
+  box-shadow: 0 0 20px rgba(0, 216, 230, 0.8), 0 0 30px rgba(0, 216, 230, 0.4) !important;
+}
+
+/* Control buttons enhanced hovering */
+#resetButton:hover, 
+#pauseButton:hover, 
+#settings-button:hover,
+.back-to-main-button:hover {
+  transform: scale(1.15) !important;
+  box-shadow: 0 0 30px rgba(0, 216, 230, 1), 0 0 20px rgba(0, 216, 230, 0.6) !important;
+}
+
+/* Smoother transitions for all UI elements */
+button, 
+img, 
+.label, 
+.toggle-button {
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+/* Transitions for overlay panels */
+#planet-info, 
+#earth-texture-edit-panel, 
+#lightingPanel {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideUp 0.4s forwards;
+}
+
+/* Add a subtle background blur effect to panels */
+#planet-info, 
+#earth-texture-edit-panel, 
+#lightingPanel,
+#date-display {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 216, 230, 0.3);
+}
+
+/* Exploration button enhanced transition */
+#explore-button {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.3s ease !important;
+}
+
+#explore-button:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 0 25px rgba(0, 216, 230, 1), 0 0 15px rgba(0, 216, 230, 0.5) !important;
+}
+
+/* Enhanced transition styling for info panels */
+#planet-info h2 {
+  animation: slideUp 0.5s 0.1s both;
+}
+
+#planet-info p {
+  animation: slideUp 0.5s 0.2s both;
+}
+
+#planet-info #fact {
+  animation: slideUp 0.5s 0.3s both;
+}
+
+#planet-info .button-container {
+  animation: slideUp 0.5s 0.4s both;
+}
+
+/* Loading spinner animation */
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(0, 216, 230, 0.3);
+  border-radius: 50%;
+  border-top-color: #00d8e6;
+  animation: rotate 1s infinite linear;
+  margin: 0 auto 20px auto;
+}
+
+/* Styles for the planet icon during transitions */
+.planet-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00d8e6, #004080);
+  position: relative;
+  box-shadow: 0 0 20px rgba(0, 216, 230, 0.8);
+  margin: 0 auto 20px auto;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+.planet-rings {
+  position: absolute;
+  width: 90px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(20deg);
+  box-shadow: 0 0 10px rgba(0, 216, 230, 0.5);
+}
+
+/* Button ripple effect */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.4);
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+  pointer-events: none;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Add this to your existing styles or create a new style tag */
+.hover-indicator {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid white;
+  opacity: 0.7;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 15px rgba(0, 216, 230, 0.8);
+  z-index: 1000;
+}
+
+/* Pulse animation for the hover indicator */
+@keyframes indicator-pulse {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+  50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+}
+
+.hover-indicator.active {
+  animation: indicator-pulse 1.5s infinite;
+}
+
+/* Fade in animation for scenes */
+@keyframes scene-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Add this class to your scenes when they become active */
+.scene-active {
+  animation: scene-fade-in 1s ease-in-out;
+}
