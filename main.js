@@ -582,7 +582,7 @@ exploreButton.id = 'explore-button'; // Add an ID for easy removal
 // Use the same structure as the second button
 exploreButton.innerHTML = `
   <span style="vertical-align: middle;">Explore</span>
-  <img src="./src/img/pic/${planetName}img.png" alt="${planetName}" style="width: 100px; height: 100px; vertical-align: middle;" />
+  <img src="./pic/${planetName}img.png" alt="${planetName}" style="width: 100px; height: 100px; vertical-align: middle;" />
 `;
 
 // Position the button (match the second button's position)
