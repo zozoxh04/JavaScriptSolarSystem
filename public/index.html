@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <audio id="background-audio" loop>
+        <source src="assets/sound/horrorbackground.wav" type="audio/wav">
+    </audio>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="styles.css"/>
+
+    <link rel="stylesheet" href="transitions.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    <script src="https://threejs.org/examples/js/objects/Lensflare.js"></script>
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+          }
+        }
+        </script>
+        
+        <script type="module" src="./main.js"></script>        
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js';
+    </script>
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js';
+        import { Line2 } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/lines/Line2.js';
+        import { LineGeometry } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/lines/LineGeometry.js';
+        import { LineMaterial } from 'https://cdn.jsdelivr.net/npm/three@0.154.0/examples/jsm/lines/LineMaterial.js';
+    </script>
+    <title>Solar System Explorer</title>
+    <style>
+        /* Base styles */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+        }
+        
+        /* Modern, sleek startup screen */
+        #starter-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(ellipse at center, #0a1a2a 0%, #000510 100%);
+            overflow: hidden;
+        }
+
+        /* Animated stars background */
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 60px 110px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 80px 150px, #fff, rgba(0,0,0,0)),
+                radial-gradient(3px 3px at 100px 190px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 120px 230px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 140px 270px, #fff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 500px 500px;
+            animation: twinkle 5s ease-in-out infinite alternate;
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes twinkle {
+            0% { background-position: 0 0; opacity: 0.4; }
+            100% { background-position: 50px 50px; opacity: 0.6; }
+        }
+
+        /* Main content container */
+        .main-container {
+            position: relative;
+            width: 90%;
+            max-width: 1400px;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        /* Solar system visual */
+        .solar-system {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            margin-bottom: 40px;
+        }
+
+        /* Sun and planets */
+        .sun {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle at center, #fff 0%, #ffcc33 30%, #ff6600 70%, #ff3300 100%);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 60px rgba(255, 102, 0, 0.8),
+                0 0 120px rgba(255, 204, 51, 0.5);
+            z-index: 2;
+        }
+
+        .orbit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(100, 181, 246, 0.15);
+            border-radius: 50%;
+        }
+
+        .orbit-1 { width: 150px; height: 150px; }
+        .orbit-2 { width: 230px; height: 230px; }
+        .orbit-3 { width: 310px; height: 310px; }
+        .orbit-4 { width: 390px; height: 390px; }
+        .orbit-5 { width: 470px; height: 470px; }
+
+        .planet {
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        /* Planet animations */
+        @keyframes orbit {
+            0% { transform: rotate(0deg) translateX(var(--orbit-radius)) rotate(0deg); }
+            100% { transform: rotate(360deg) translateX(var(--orbit-radius)) rotate(-360deg); }
+        }
+
+        .planet-1 {
+            width: 8px;
+            height: 8px;
+            background: #aaa;
+            box-shadow: 0 0 10px rgba(170, 170, 170, 0.6);
+            top: 50%;
+            left: 50%;
+            --orbit-radius: 75px;
+            animation: orbit 10s linear infinite;
+        }
+
+        .planet-2 {
+            width: 12px;
+            height: 12px;
+            background: #e6c35c;
+            box-shadow: 0 0 10px rgba(230, 195, 92, 0.6);
+            top: 50%;
+            left: 50%;
+            --orbit-radius: 115px;
+            animation: orbit 15s linear infinite;
+        }
+
+        .planet-3 {
+            width: 14px;
+            height: 14px;
+            background: #4c91d7;
+            box-shadow: 0 0 10px rgba(76, 145, 215, 0.7);
+            top: 50%;
+            left: 50%;
+            --orbit-radius: 155px;
+            animation: orbit 20s linear infinite;
+        }
+
+        .planet-4 {
+            width: 10px;
+            height: 10px;
+            background: #ff6b4a;
+            box-shadow: 0 0 10px rgba(255, 107, 74, 0.6);
+            top: 50%;
+            left: 50%;
+            --orbit-radius: 195px;
+            animation: orbit 25s linear infinite;
+        }
+
+        .planet-5 {
+            width: 28px;
+            height: 28px;
+            background: #e0a343;
+            box-shadow: 0 0 10px rgba(224, 163, 67, 0.6);
+            top: 50%;
+            left: 50%;
+            --orbit-radius: 235px;
+            animation: orbit 35s linear infinite;
+        }
+
+        /* Shooting stars */
+        .shooting-star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background-color: #fff;
+            border-radius: 50%;
+            z-index: 1;
+            opacity: 0;
+        }
+
+        @keyframes shoot {
+            0% { 
+                opacity: 1;
+                transform: translate(0, 0) rotate(var(--angle)); 
+                box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+            }
+            20% { opacity: 1; }
+            100% { 
+                opacity: 0;
+                transform: translate(var(--distance), var(--distance)) rotate(var(--angle)); 
+                box-shadow: 0 0 40px 2px rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        .shooting-star:nth-child(1) {
+            top: 10%;
+            left: 20%;
+            --angle: 45deg;
+            --distance: 400px;
+            animation: shoot 4s linear infinite;
+            animation-delay: 0s;
+        }
+
+        .shooting-star:nth-child(2) {
+            top: 30%;
+            left: 80%;
+            --angle: 225deg;
+            --distance: 400px;
+            animation: shoot 5s linear infinite;
+            animation-delay: 2s;
+        }
+
+        .shooting-star:nth-child(3) {
+            top: 70%;
+            left: 70%;
+            --angle: 315deg;
+            --distance: 500px;
+            animation: shoot 6s linear infinite;
+            animation-delay: 4s;
+        }
+
+        /* Title and content */
+        .content-wrapper {
+            margin-top: -200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            max-width: 800px;
+            padding: 0 20px;
+        }
+
+        .title {
+            font-size: clamp(3rem, 8vw, 5rem);
+            background: linear-gradient(to right, #00d8e6, #00aeff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 
+                0 0 10px rgba(0, 216, 230, 0.5),
+                0 0 20px rgba(0, 174, 255, 0.3);
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            color: #00d8e6;
+            margin-bottom: 30px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            position: relative;
+            opacity: 0.8;
+        }
+
+        .subtitle::after {
+            content: '';
+            position: absolute;
+            width: 80px;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #00d8e6, transparent);
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .description {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 700px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        /* Modern button with hover effect */
+        #start-button {
+            padding: 15px 40px;
+            font-size: clamp(1rem, 1.5vw, 1.2rem);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 600;
+            background: linear-gradient(45deg, #004966, #006b99);
+            color: #00d8e6;
+            border: 1px solid rgba(0, 216, 230, 0.5);
+            border-radius: 30px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(0, 216, 230, 0.3);
+        }
+
+        #start-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 216, 230, 0.2), transparent);
+            transition: all 0.5s ease;
+        }
+
+        #start-button:hover {
+            background: linear-gradient(45deg, #006b99, #004966);
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(0, 216, 230, 0.5);
+        }
+
+        #start-button:hover::before {
+            left: 100%;
+        }
+
+        #start-button:active {
+            transform: translateY(0);
+            box-shadow: 0 0 15px rgba(0, 216, 230, 0.4);
+        }
+
+        /* Status panels */
+        .status-panel {
+            position: absolute;
+            padding: 10px 15px;
+            background: rgba(0, 30, 60, 0.3);
+            border: 1px solid rgba(0, 216, 230, 0.3);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #00d8e6;
+            backdrop-filter: blur(5px);
+        }
+
+        .top-left-panel {
+            top: 20px;
+            left: 20px;
+        }
+
+        .bottom-right-panel {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            margin-bottom: 5px;
+        }
+
+        .status-label {
+            width: 110px;
+            opacity: 0.8;
+        }
+
+        .status-value {
+            font-weight: 500;
+        }
+
+        /* Dynamic data animations */
+        .data-stream {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #00d8e6, transparent);
+            opacity: 0.5;
+        }
+
+        @keyframes stream {
+            0% { width: 0; opacity: 0; }
+            50% { opacity: 0.7; }
+            100% { width: 100%; opacity: 0; }
+        }
+
+        .data-stream-1 {
+            bottom: 30px;
+            left: 20px;
+            width: 150px;
+            animation: stream 4s infinite;
+        }
+
+        .data-stream-2 {
+            top: 50px;
+            right: 40px;
+            width: 100px;
+            animation: stream 3s infinite;
+            animation-delay: 1s;
+        }
+
+        /* Keep original styles for your app */
+        #planet-info {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.6), inset 0 0 30px rgba(0, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            width: 400px;
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+            z-index: 10;
+            color: #00ffff;
+            font-size: 14px;
+            text-shadow: 0 0 5px #00ffff;
+            animation: fadeIn 0.5s ease-in-out;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        #planet-info h2 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #00ffff;
+            text-shadow: 0 0 8px #00ffff;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.5);
+            padding-bottom: 10px;
+        }
+
+        #planet-info p {
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .button-container button {
+            padding: 8px 14px;
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #00ffff;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 3px #00ffff;
+        }
+
+        .button-container button:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 10px #00ffff;
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #9b00b3;
+        }
+
+        #gui-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        
+        #planet-buttons {
+            position: fixed;
+            bottom: 10px;
+            left: 95%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 800px;
+            z-index: 1000;
+        }
+        
+        .planet-button {
+            min-width: 80px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-family: 'Franklin Gothic Medium';
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            transition: transform 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .planet-button:hover {
+            transform: scale(1.1);
+        }
+        
+        @media (max-width: 768px) {
+            .planet-button {
+                padding: 6px 12px;
+                font-size: 0.9em;
+                min-width: 60px;
+            }
+            
+            .solar-system {
+                width: 300px;
+                height: 300px;
+            }
+            
+            .orbit-1 { width: 80px; height: 80px; }
+            .orbit-2 { width: 120px; height: 120px; }
+            .orbit-3 { width: 160px; height: 160px; }
+            .orbit-4 { width: 200px; height: 200px; }
+            .orbit-5 { width: 240px; height: 240px; }
+            
+            .sun {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .planet-1 { --orbit-radius: 40px; }
+            .planet-2 { --orbit-radius: 60px; }
+            .planet-3 { --orbit-radius: 80px; }
+            .planet-4 { --orbit-radius: 100px; }
+            .planet-5 { --orbit-radius: 120px; }
+            
+            .content-wrapper {
+                margin-top: -100px;
+            }
+        }
+       
+        .toggle-button {
+            position: fixed;
+            bottom: 150px;
+            left: 20px;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="transition-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0); pointer-events: none; z-index: 9999; transition: background-color 1s ease-in-out; display: flex; justify-content: center; align-items: center; opacity: 0;">
+        <!-- Loading element with planet icon -->
+        <div id="loading-element" style="color: white; font-family: 'Orbitron', sans-serif; text-align: center; opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease;">
+            <!-- Planet icon -->
+            <div id="planet-icon" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #00d8e6, #004080); margin: 0 auto 15px auto; position: relative; box-shadow: 0 0 20px rgba(0, 216, 230, 0.5); transform: scale(0); transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                <!-- Planet rings -->
+                <div id="planet-rings" style="position: absolute; width: 90px; height: 20px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.5); top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(20deg); box-shadow: 0 0 10px rgba(0, 216, 230, 0.3);"></div>
+            </div>
+            <p id="transition-text">Transitioning...</p>
+        </div>
+    </div>
+
+    <!-- Stars background for transition effect -->
+    <div id="transition-stars" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; opacity: 0; transition: opacity 0.5s ease;"></div>
+
+    <!-- Particles container for floating effects -->
+    <div id="transition-particles" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; opacity: 0; transition: opacity 0.5s ease;"></div>    
+    
+    <!-- Modern startup screen -->
+    <div id="starter-screen">
+        <!-- Stars background -->
+        <div class="stars"></div>
+        
+        <!-- Shooting stars -->
+        <div class="shooting-star"></div>
+        <div class="shooting-star"></div>
+        <div class="shooting-star"></div>
+        
+        <!-- Main container -->
+        <div class="main-container">
+            <!-- Solar system visualization -->
+            <div class="solar-system">
+                <div class="sun"></div>
+                
+                <div class="orbit orbit-1"></div>
+                <div class="planet planet-1"></div>
+                
+                <div class="orbit orbit-2"></div>
+                <div class="planet planet-2"></div>
+                
+                <div class="orbit orbit-3"></div>
+                <div class="planet planet-3"></div>
+                
+                <div class="orbit orbit-4"></div>
+                <div class="planet planet-4"></div>
+                
+                <div class="orbit orbit-5"></div>
+                <div class="planet planet-5"></div>
+            </div>
+            
+            <!-- Content -->
+            <div class="content-wrapper">
+                <h1 class="title">Solar System Explorer</h1>
+                <h2 class="subtitle">Interactive 3D Experience</h2>
+                <p class="description">Embark on a journey through our solar system with this high-fidelity 3D simulation. Explore planets, moons, and celestial phenomena with precise orbital mechanics and detailed scientific data. Discover the wonders of our cosmic neighborhood.</p>
+                <button id="start-button" style="position: fixed; display: block; padding: 15px 40px; font-size: 1.2rem; font-family: 'Orbitron', sans-serif; background: linear-gradient(45deg, #004966, #006b99); color: #00d8e6; border: 1px solid rgba(0, 216, 230, 0.5); border-radius: 30px; cursor: pointer; margin: 20px auto; box-shadow: 0 0 20px rgba(0, 216, 230, 0.3); text-transform: uppercase; font-weight: bold; z-index: 100;">Launch Explorer</button>
+            </div>
+        </div>
+        
+        <!-- Status panels -->
+        <div class="status-panel top-left-panel">
+            <div class="status-item">
+                <div class="status-label">SYSTEM:</div>
+                <div class="status-value">SOL-001</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">DATABASE:</div>
+                <div class="status-value">UPDATED</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">STATUS:</div>
+                <div class="status-value">READY</div>
+            </div>
+        </div>
+        
+        <div class="status-panel bottom-right-panel">
+            <div class="status-item">
+                <div class="status-label">VERSION:</div>
+                <div class="status-value">2.5.1</div>
+            </div>
+        </div>
+        
+        <!-- Animated data streams -->
+        <div class="data-stream data-stream-1"></div>
+        <div class="data-stream data-stream-2"></div>
+    </div>
+    
+    <div id="planet-info" style="display: none;"></div>
+    <div id="gui-container" style="display: none;"></div>
+    <div id="planet-buttons" style="display: none;"></div> <!-- Container for Planet Buttons -->
+    <img id="pauseButton" src="src/img/pause.png" alt="Pause Button">
+    
+    <!-- Script for the startup screen -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Button click event
+            document.getElementById('start-button').addEventListener('click', function() {
+                console.log('Start button clicked');
+                
+                // Check if the transition system is available
+                if (typeof window.transitionStartupToMain === 'function') {
+                    console.log('Using transition system');
+                    window.transitionStartupToMain(function() {
+                        console.log('Transition complete, showing main scene');
+                        // Hide starter screen
+                        document.getElementById('starter-screen').style.display = 'none';
+                        
+                        // Show GUI container
+                        const guiContainer = document.getElementById('gui-container');
+                        if (guiContainer) {
+                            guiContainer.style.display = 'block';
+                        }
+                        
+                        // Enable pointer events on canvas
+                        const canvas = document.querySelector('canvas');
+                        if (canvas) {
+                            canvas.style.pointerEvents = 'auto';
+                        }
+                        
+                        // Add reset button if the function exists
+                        if (typeof window.addResetViewButton === 'function') {
+                            try {
+                                window.addResetViewButton();
+                            } catch (error) {
+                                console.error('Error adding reset button:', error);
+                            }
+                        }
+                    });
+                } else {
+                    // Fall back to basic transition if the system isn't available
+                    console.log('No transition system available, using direct method');
+                    
+                    // Add fade-out effect
+                    const starterScreen = document.getElementById('starter-screen');
+                    starterScreen.style.opacity = '0';
+                    starterScreen.style.transition = 'opacity 1s ease';
+                    
+                    // After fade completes, hide screen and show main content
+                    setTimeout(function() {
+                        starterScreen.style.display = 'none';
+                        
+                        // Show GUI container
+                        const guiContainer = document.getElementById('gui-container');
+                        if (guiContainer) {
+                            guiContainer.style.display = 'block';
+                        }
+                        
+                        // Enable pointer events on canvas
+                        const canvas = document.querySelector('canvas');
+                        if (canvas) {
+                            canvas.style.pointerEvents = 'auto';
+                        }
+                        
+                        // Add reset button if the function exists
+                        if (typeof window.addResetViewButton === 'function') {
+                            try {
+                                window.addResetViewButton();
+                            } catch (error) {
+                                console.error('Error adding reset button:', error);
+                            }
+                        }
+                    }, 1000);
+                }
+            });
+        });
+    </script>
+    
+    <!-- Your main script must come AFTER the starter screen script -->
+    <script type="module" src="./main.js"></script>
+</body>
+</html>
