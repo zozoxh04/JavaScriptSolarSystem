@@ -174,8 +174,8 @@ const particleSystem = new THREE.Points(particles, particleMaterial);
 // Add the particle system to the scene
 scene.add(particleSystem);
 
-const clickSound = new Audio('/assets/sound/robotclick.wav');
-const clickSound2 = new Audio('/assets/sound/scificlick.wav');
+const clickSound = new Audio('./assets/sound/robotclick.wav');
+const clickSound2 = new Audio('./assets/sound/scificlick.wav');
 
 const LABEL_FADE_THRESHOLDS = {
   mercury: { fadeStart: 250, fadeEnd: 500 },
