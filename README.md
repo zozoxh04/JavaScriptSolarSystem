@@ -148,8 +148,14 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - Three.js community for excellent documentation
 - NASA for planetary data and inspiration
 
+## Contact
+Zahra Hashem - zahrasayedalihashim@gmail.com
 
-
+Project Links: 
+- https://github.com/zozoxh04/JavaScriptSolarSystem
+- https://zozoxh04.github.io/
+-----
+Made with ❤️ and JavaScript
 
 
 
